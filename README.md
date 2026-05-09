@@ -9,6 +9,8 @@
   A lightweight Windows desktop calendar widget with two-way Google Calendar sync
 </p>
 
+> **개인 사용 전용** — 이 프로젝트는 개인 용도로만 사용합니다. 설치·개발 가이드는 참고용으로 유지합니다.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white"/>
   <img src="https://img.shields.io/badge/Wails-CC0000?style=flat&logo=go&logoColor=white"/>
@@ -18,8 +20,7 @@
   <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white"/>
 </p>
 
-> 이 프로젝트는 오픈소스로 무료이며, 누구나 코드를 자유롭게 사용·수정·재배포할 수 있습니다.  
-> This project is open-source and free; you're welcome to use, modify, and redistribute the code.
+> 이 프로젝트는 개인 학습 및 사용을 위한 것입니다. 코드는 참고 목적으로 공개되어 있습니다.
 
 ---
 
