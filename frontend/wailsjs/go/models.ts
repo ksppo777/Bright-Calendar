@@ -66,24 +66,6 @@ export namespace main {
 	        this.createdAt = source["createdAt"];
 	    }
 	}
-	export class UpdateInfo {
-	    currentVersion: string;
-	    latestVersion: string;
-	    updateAvailable: boolean;
-	    releaseUrl: string;
-
-	    static createFrom(source: any = {}) {
-	        return new UpdateInfo(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.currentVersion = source["currentVersion"];
-	        this.latestVersion = source["latestVersion"];
-	        this.updateAvailable = source["updateAvailable"];
-	        this.releaseUrl = source["releaseUrl"];
-	    }
-	}
 	export class GoogleSyncResult {
 	    pulled: number;
 	    pushed: number;
@@ -156,6 +138,26 @@ export namespace main {
 	        this.tokenType = source["tokenType"];
 	        this.scope = source["scope"];
 	        this.idToken = source["idToken"];
+	    }
+	}
+	export class UpdateInfo {
+	    currentVersion: string;
+	    latestVersion: string;
+	    updateAvailable: boolean;
+	    releaseUrl: string;
+	    downloadUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.updateAvailable = source["updateAvailable"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.downloadUrl = source["downloadUrl"];
 	    }
 	}
 

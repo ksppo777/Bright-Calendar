@@ -4,11 +4,11 @@ import {main} from '../models';
 
 export function CheckForUpdate(arg1:string):Promise<main.UpdateInfo>;
 
-export function DownloadAndInstall(arg1:string):Promise<void>;
-
 export function CreateEvent(arg1:main.CalendarEvent):Promise<main.CalendarEvent>;
 
 export function DeleteEvent(arg1:string):Promise<void>;
+
+export function DownloadAndInstall(arg1:string):Promise<void>;
 
 export function GetGoogleClientConfig():Promise<string>;
 

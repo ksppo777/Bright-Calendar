@@ -6,16 +6,16 @@ export function CheckForUpdate(arg1) {
   return window['go']['main']['App']['CheckForUpdate'](arg1);
 }
 
-export function DownloadAndInstall(arg1) {
-  return window['go']['main']['App']['DownloadAndInstall'](arg1);
-}
-
 export function CreateEvent(arg1) {
   return window['go']['main']['App']['CreateEvent'](arg1);
 }
 
 export function DeleteEvent(arg1) {
   return window['go']['main']['App']['DeleteEvent'](arg1);
+}
+
+export function DownloadAndInstall(arg1) {
+  return window['go']['main']['App']['DownloadAndInstall'](arg1);
 }
 
 export function GetGoogleClientConfig() {

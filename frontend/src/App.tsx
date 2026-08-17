@@ -6,7 +6,7 @@ import { useLanguage } from "@/components/language-provider";
 import { WindowSetPosition, WindowSetSize } from "../wailsjs/runtime/runtime";
 import { CheckForUpdate, DownloadAndInstall } from "../wailsjs/go/main/App";
 
-const GITHUB_REPO = "JKH-ML/windows-calendar-widget";
+const GITHUB_REPO = "ksppo777/Bright-Calendar";
 
 type UpdateState = "idle" | "downloading" | "error";
 
@@ -23,7 +23,7 @@ function App() {
           setUpdateInfo({ downloadUrl: info.downloadUrl });
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   async function handleInstall() {
@@ -78,8 +78,8 @@ function App() {
               {updateState === "error"
                 ? (resolvedLanguage === "ko" ? "업데이트 실패. 다시 시도해 주세요." : "Update failed. Please try again.")
                 : updateState === "downloading"
-                ? (resolvedLanguage === "ko" ? "다운로드 중... 잠시 후 재시작됩니다." : "Downloading... App will restart shortly.")
-                : (resolvedLanguage === "ko" ? "새 버전이 출시되었습니다." : "A new version is available.")}
+                  ? (resolvedLanguage === "ko" ? "다운로드 중... 잠시 후 재시작됩니다." : "Downloading... App will restart shortly.")
+                  : (resolvedLanguage === "ko" ? "새 버전이 출시되었습니다." : "A new version is available.")}
             </span>
             <div className="flex gap-2">
               {updateState !== "downloading" && (
