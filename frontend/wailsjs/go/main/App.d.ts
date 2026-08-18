@@ -34,6 +34,8 @@ export function ListEvents():Promise<Array<main.CalendarEvent>>;
 
 export function SaveGoogleClientConfig(arg1:string,arg2:string):Promise<void>;
 
+export function SaveWindowGeometry(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
+
 export function SearchEvents(arg1:string,arg2:string,arg3:string,arg4:number):Promise<Array<main.CalendarEvent>>;
 
 export function SetOpacity(arg1:number):Promise<void>;

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import {
   startOfMonth,
   endOfMonth,
@@ -44,6 +44,29 @@ export default function CalendarBodyMonth() {
   } = useCalendarContext()
   const { resolvedLanguage } = useLanguage()
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerHeight, setContainerHeight] = useState<number>(0)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const updateHeight = () => {
+      setContainerHeight(el.clientHeight)
+    }
+    updateHeight()
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          setContainerHeight(entry.contentRect.height)
+        }
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   const monthStart = startOfMonth(date)
   const monthEnd = endOfMonth(date)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn })
@@ -63,10 +86,22 @@ export default function CalendarBodyMonth() {
   }, [calendarDays])
 
   const today = new Date()
-  const MAX_VISIBLE_SLOTS = 3
+
+  // Dynamically calculate visible slots per week based on current container height
+  const maxVisibleSlots = useMemo(() => {
+    if (!containerHeight || weeks.length === 0) return 3
+    // Header is ~33px, each week row has (containerHeight - 33) / numWeeks
+    const weekHeight = (containerHeight - 33) / weeks.length
+    // Date number top padding ~28px, bottom more button buffer ~18px, each slot is ~23px (20px + 3px gap)
+    const calculated = Math.floor((weekHeight - 28 - 18) / 23)
+    return Math.max(3, calculated)
+  }, [containerHeight, weeks.length])
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden select-none">
+    <div
+      ref={containerRef}
+      className="flex flex-col flex-1 h-full min-h-0 overflow-hidden select-none"
+    >
       {/* Weekday Header */}
       <div className="grid grid-cols-7 border-b border-border divide-x divide-border shrink-0 bg-background/50">
         {(() => {
@@ -188,7 +223,7 @@ export default function CalendarBodyMonth() {
             })
 
             // Unique segments to render per slot (only first appearance in slot)
-            const visibleSlots = slots.slice(0, MAX_VISIBLE_SLOTS)
+            const visibleSlots = slots.slice(0, maxVisibleSlots)
 
             return (
               <div
@@ -318,14 +353,14 @@ export default function CalendarBodyMonth() {
                   })}
 
                   {/* "+N more" Row if there are overflow events */}
-                  {slots.length > MAX_VISIBLE_SLOTS && (
+                  {slots.length > maxVisibleSlots && (
                     <div className="grid grid-cols-7 gap-x-1 h-[16px] pointer-events-auto">
                       {weekDays.map((day, colIdx) => {
                         const count = colEventCounts[colIdx]
-                        if (count <= MAX_VISIBLE_SLOTS) {
+                        if (count <= maxVisibleSlots) {
                           return <div key={`more-empty-${colIdx}`} />
                         }
-                        const extra = count - MAX_VISIBLE_SLOTS
+                        const extra = count - maxVisibleSlots
                         return (
                           <div
                             key={`more-${colIdx}`}

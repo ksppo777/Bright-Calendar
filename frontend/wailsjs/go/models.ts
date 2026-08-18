@@ -6,6 +6,10 @@ export namespace main {
 	    showOnTaskbar: boolean;
 	    opacity: number;
 	    windowPinMode: string;
+	    windowX?: number;
+	    windowY?: number;
+	    windowWidth?: number;
+	    windowHeight?: number;
 	    googleClientId?: string;
 	    googleClientSecret?: string;
 	
@@ -20,6 +24,10 @@ export namespace main {
 	        this.showOnTaskbar = source["showOnTaskbar"];
 	        this.opacity = source["opacity"];
 	        this.windowPinMode = source["windowPinMode"];
+	        this.windowX = source["windowX"];
+	        this.windowY = source["windowY"];
+	        this.windowWidth = source["windowWidth"];
+	        this.windowHeight = source["windowHeight"];
 	        this.googleClientId = source["googleClientId"];
 	        this.googleClientSecret = source["googleClientSecret"];
 	    }

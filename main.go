@@ -14,12 +14,22 @@ var assets embed.FS
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
+	_ = app.loadSettings()
+
+	w := app.settings.WindowWidth
+	h := app.settings.WindowHeight
+	if w < 500 {
+		w = 890
+	}
+	if h < 400 {
+		h = 800
+	}
 
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:     "calendar widget",
-		Width:     1024,
-		Height:    768,
+		Width:     w,
+		Height:    h,
 		MinWidth:  500,
 		MinHeight: 400,
 		Frameless: true,

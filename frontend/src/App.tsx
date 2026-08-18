@@ -5,7 +5,7 @@ import ResizeHandles from "@/components/resize-handles";
 import { WidgetVisibilityProvider } from "@/components/widget-visibility-context";
 import { useLanguage } from "@/components/language-provider";
 import { WindowSetPosition, WindowSetSize, WindowGetPosition, WindowGetSize } from "../wailsjs/runtime/runtime";
-import { CheckForUpdate, DownloadAndInstall } from "../wailsjs/go/main/App";
+import { CheckForUpdate, DownloadAndInstall, GetSettings, SaveWindowGeometry } from "../wailsjs/go/main/App";
 
 const GITHUB_REPO = "ksppo777/Bright-Calendar";
 
@@ -47,62 +47,93 @@ function App() {
     [isOpen]
   );
 
+  // 1. Initial restoration from localStorage or backend settings
   useEffect(() => {
-    const defaults = { width: 890, height: 800, x: 1030, y: 0 };
-    let target = defaults;
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("widget-position-size");
-      if (saved) {
-        try {
+    async function restorePositionAndSize() {
+      const defaults = { width: 890, height: 800, x: 1030, y: 0 };
+      let target = defaults;
+      try {
+        const saved = localStorage.getItem("widget-position-size");
+        if (saved) {
           const parsed = JSON.parse(saved);
-          target = {
-            width: parsed.width ?? defaults.width,
-            height: parsed.height ?? defaults.height,
-            x: parsed.x ?? defaults.x,
-            y: parsed.y ?? defaults.y,
-          };
-        } catch {
-          target = defaults;
+          if (parsed.width && parsed.height) {
+            target = {
+              width: parsed.width ?? defaults.width,
+              height: parsed.height ?? defaults.height,
+              x: parsed.x ?? defaults.x,
+              y: parsed.y ?? defaults.y,
+            };
+          }
+        } else {
+          const s = await GetSettings();
+          if (s && s.windowWidth && s.windowHeight) {
+            target = {
+              width: s.windowWidth,
+              height: s.windowHeight,
+              x: s.windowX ?? defaults.x,
+              y: s.windowY ?? defaults.y,
+            };
+          }
         }
+      } catch {
+        target = defaults;
       }
+      WindowSetSize(target.width, target.height);
+      WindowSetPosition(target.x, target.y);
     }
-    WindowSetSize(target.width, target.height);
-    WindowSetPosition(target.x, target.y);
+    void restorePositionAndSize();
   }, []);
 
+  // 2. Safe debounced saving after initial warmup period
   useEffect(() => {
-    async function savePositionAndSize() {
-      try {
-        const [pos, size] = await Promise.all([
-          WindowGetPosition(),
-          WindowGetSize(),
-        ]);
-        if (pos && size) {
-          const saved = localStorage.getItem("widget-position-size");
-          const parsed = saved ? JSON.parse(saved) : {};
-          localStorage.setItem(
-            "widget-position-size",
-            JSON.stringify({
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let isReady = false;
+
+    // Give 1.2s for window restoration and render stabilization before listening for saves
+    const warmupTimer = setTimeout(() => {
+      isReady = true;
+    }, 1200);
+
+    async function handleSave() {
+      if (!isReady) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        try {
+          const [pos, size] = await Promise.all([
+            WindowGetPosition(),
+            WindowGetSize(),
+          ]);
+          if (pos && size && size.w >= 400 && size.h >= 300) {
+            const saved = localStorage.getItem("widget-position-size");
+            const parsed = saved ? JSON.parse(saved) : {};
+            const toSave = {
               ...parsed,
               x: pos.x,
               y: pos.y,
               width: size.w,
               height: size.h,
-            })
-          );
+            };
+            localStorage.setItem("widget-position-size", JSON.stringify(toSave));
+            void SaveWindowGeometry(pos.x, pos.y, size.w, size.h);
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
-      }
+      }, 400);
     }
-    window.addEventListener("mouseup", savePositionAndSize);
-    window.addEventListener("resize", savePositionAndSize);
+
+    window.addEventListener("mouseup", handleSave);
+    window.addEventListener("resize", handleSave);
+
     return () => {
-      window.removeEventListener("mouseup", savePositionAndSize);
-      window.removeEventListener("resize", savePositionAndSize);
+      clearTimeout(warmupTimer);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      window.removeEventListener("mouseup", handleSave);
+      window.removeEventListener("resize", handleSave);
     };
   }, []);
 
+  // 3. Handle F5 / Ctrl+R cleanly
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && (e.key === "r" || e.key === "R")) || e.key === "F5") {

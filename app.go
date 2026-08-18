@@ -131,6 +131,18 @@ func (a *App) SetWindowPinMode(mode string) {
 	}
 }
 
+// SaveWindowGeometry persists the window position and dimensions.
+func (a *App) SaveWindowGeometry(x, y, width, height int) error {
+	if width < 300 || height < 200 {
+		return nil
+	}
+	a.settings.WindowX = x
+	a.settings.WindowY = y
+	a.settings.WindowWidth = width
+	a.settings.WindowHeight = height
+	return a.saveSettings(a.settings)
+}
+
 // GoogleAuthURL builds an OAuth consent URL for Google Calendar.
 func (a *App) GoogleAuthURL(state string) (string, error) {
 	if a.google == nil {
@@ -1242,6 +1254,10 @@ type AppSettings struct {
 	ShowOnTaskbar      bool   `json:"showOnTaskbar"`
 	Opacity            int    `json:"opacity"`
 	WindowPinMode      string `json:"windowPinMode"` // "normal", "bottom", "top"
+	WindowX            int    `json:"windowX,omitempty"`
+	WindowY            int    `json:"windowY,omitempty"`
+	WindowWidth        int    `json:"windowWidth,omitempty"`
+	WindowHeight       int    `json:"windowHeight,omitempty"`
 	GoogleClientID     string `json:"googleClientId,omitempty"`
 	GoogleClientSecret string `json:"googleClientSecret,omitempty"`
 }
@@ -1253,6 +1269,10 @@ func defaultSettings() AppSettings {
 		ShowOnTaskbar:      false,
 		Opacity:            100,
 		WindowPinMode:      "normal",
+		WindowX:            1030,
+		WindowY:            0,
+		WindowWidth:        890,
+		WindowHeight:       800,
 		GoogleClientID:     DefaultGoogleClientID,
 		GoogleClientSecret: DefaultGoogleClientSecret,
 	}
