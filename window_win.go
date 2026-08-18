@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -521,3 +522,79 @@ func setWindowOpacity(windowTitle string, opacityPercent int) error {
 	procSetLayeredWindowAttributes.Call(hwnd, 0, uintptr(bAlpha), uintptr(lwaAlpha))
 	return nil
 }
+
+const (
+	hwndTop       uintptr = 0
+	hwndBottom    uintptr = 1
+	hwndTopMost   uintptr = ^uintptr(0) // -1
+	hwndNoTopMost uintptr = ^uintptr(1) // -2
+	swpNoActivate uintptr = 0x0010
+)
+
+var (
+	pinModeMu      sync.Mutex
+	currentPinMode = "normal"
+	pinModeStopCh  chan struct{}
+)
+
+func setWindowPinMode(windowTitle string, mode string) error {
+	pinModeMu.Lock()
+	defer pinModeMu.Unlock()
+
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode != "top" && mode != "bottom" {
+		mode = "normal"
+	}
+	currentPinMode = mode
+
+	if pinModeStopCh != nil {
+		close(pinModeStopCh)
+		pinModeStopCh = nil
+	}
+
+	titlePtr, err := syscall.UTF16PtrFromString(windowTitle)
+	if err != nil {
+		return err
+	}
+	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(titlePtr)))
+	if hwnd == 0 {
+		return fmt.Errorf("window not found")
+	}
+
+	switch mode {
+	case "top":
+		if globalAppRef != nil && globalAppRef.ctx != nil {
+			wailsruntime.WindowSetAlwaysOnTop(globalAppRef.ctx, true)
+		}
+		procSetWindowPos.Call(hwnd, hwndTopMost, 0, 0, 0, 0, uintptr(swpNomove|swpNosize|swpNoActivate))
+	case "bottom":
+		if globalAppRef != nil && globalAppRef.ctx != nil {
+			wailsruntime.WindowSetAlwaysOnTop(globalAppRef.ctx, false)
+		}
+		procSetWindowPos.Call(hwnd, hwndNoTopMost, 0, 0, 0, 0, uintptr(swpNomove|swpNosize|swpNoActivate))
+		procSetWindowPos.Call(hwnd, hwndBottom, 0, 0, 0, 0, uintptr(swpNomove|swpNosize|swpNoActivate))
+
+		stopCh := make(chan struct{})
+		pinModeStopCh = stopCh
+		go func(h uintptr, stop chan struct{}) {
+			ticker := time.NewTicker(500 * time.Millisecond)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-stop:
+					return
+				case <-ticker.C:
+					procSetWindowPos.Call(h, hwndBottom, 0, 0, 0, 0, uintptr(swpNomove|swpNosize|swpNoActivate))
+				}
+			}
+		}(hwnd, stopCh)
+	case "normal":
+		if globalAppRef != nil && globalAppRef.ctx != nil {
+			wailsruntime.WindowSetAlwaysOnTop(globalAppRef.ctx, false)
+		}
+		procSetWindowPos.Call(hwnd, hwndNoTopMost, 0, 0, 0, 0, uintptr(swpNomove|swpNosize|swpNoActivate))
+	}
+
+	return nil
+}
+

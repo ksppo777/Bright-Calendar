@@ -9,7 +9,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/components/language-provider'
-import { GetSettings, UpdateSettings, SetOpacity } from '../../../wailsjs/go/main/App'
+import { GetSettings, UpdateSettings, SetOpacity, SetWindowPinMode } from '../../../wailsjs/go/main/App'
 import type { main } from '../../../wailsjs/go/models'
 import StatusBanner from '../status-banner'
 
@@ -18,6 +18,8 @@ const countryOptions = [
   { code: 'US', label: '미국', calendarId: 'en.usa#holiday@group.v.calendar.google.com' },
   { code: 'GB', label: '영국', calendarId: 'en.uk#holiday@group.v.calendar.google.com' },
 ] as const
+
+type PinMode = 'normal' | 'bottom' | 'top'
 
 type Props = {
   open: boolean
@@ -46,6 +48,8 @@ export default function CalendarSettingsDialog({
   const [showOnTaskbar, setShowOnTaskbar] = useState(false)
   const [opacity, setOpacity] = useState(100)
   const [initialOpacity, setInitialOpacity] = useState(100)
+  const [windowPinMode, setWindowPinModeState] = useState<PinMode>('normal')
+  const [initialWindowPinMode, setInitialWindowPinMode] = useState<PinMode>('normal')
   const [loadingSettings, setLoadingSettings] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,6 +71,9 @@ export default function CalendarSettingsDialog({
         const op = s.opacity ?? 100
         setOpacity(op)
         setInitialOpacity(op)
+        const pin = (s.windowPinMode as PinMode) || 'normal'
+        setWindowPinModeState(pin)
+        setInitialWindowPinMode(pin)
       } catch (err: any) {
         setError(err?.message ?? String(err))
       } finally {
@@ -103,14 +110,52 @@ export default function CalendarSettingsDialog({
       ? 'Windows 작업 표시줄에 캘린더 프로그램 버튼을 표시합니다.'
       : 'Show the calendar program button on the Windows taskbar.'
 
+  const pinModeTitle =
+    resolvedLanguage === 'ko' ? '창 위치 고정 (계층 우선순위)' : 'Window layer position'
+  const pinModeDesc =
+    resolvedLanguage === 'ko'
+      ? '캘린더 창이 다른 프로그램들과 겹칠 때의 앞/뒤 위치를 결정합니다.'
+      : 'Control whether the calendar window stays in front, normal, or in the background.'
+
+  const pinModeOptions: { value: PinMode; label: string; desc: string }[] = [
+    {
+      value: 'normal',
+      label: resolvedLanguage === 'ko' ? '기존처럼 유지 (기본)' : 'Normal (Default)',
+      desc:
+        resolvedLanguage === 'ko'
+          ? '일반 창처럼 작동하며 클릭이나 포커스에 따라 자유롭게 앞/뒤로 이동합니다.'
+          : 'Behaves like a regular window, moving forward or backward on focus.',
+    },
+    {
+      value: 'bottom',
+      label:
+        resolvedLanguage === 'ko'
+          ? '항상 창의 맨 뒤에 위치 (바탕화면 고정)'
+          : 'Always on bottom (Desktop widget)',
+      desc:
+        resolvedLanguage === 'ko'
+          ? '다른 모든 프로그램 창보다 항상 뒤에 위치하여 바탕화면 위젯처럼 사용합니다.'
+          : 'Stays behind all other application windows like a desktop widget.',
+    },
+    {
+      value: 'top',
+      label:
+        resolvedLanguage === 'ko' ? '항상 창의 맨 앞에 위치 (항상 위)' : 'Always on top',
+      desc:
+        resolvedLanguage === 'ko'
+          ? '다른 어떤 창을 열어도 항상 맨 위에 캘린더를 띄워둡니다.'
+          : 'Stays visible on top of all other windows.',
+    },
+  ]
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{desc}</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 overflow-y-auto pr-1">
           {error && <StatusBanner tone="error" message={error} />}
           <div className="flex flex-col gap-2">
             <Label htmlFor="country-select">
@@ -177,6 +222,51 @@ export default function CalendarSettingsDialog({
             </div>
             <p className="text-xs text-muted-foreground">{taskbarDesc}</p>
           </div>
+
+          {/* Window Pin Mode (Normal / Bottom / Top) */}
+          <div className="flex flex-col gap-2 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold">{pinModeTitle}</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">{pinModeDesc}</p>
+            <div className="grid grid-cols-1 gap-2 pt-1">
+              {pinModeOptions.map((opt) => {
+                const isSelected = windowPinMode === opt.value
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 shadow-xs'
+                        : 'border-border/60 hover:bg-accent/40'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="window-pin-mode"
+                      value={opt.value}
+                      checked={isSelected}
+                      disabled={loadingSettings}
+                      className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+                      onChange={() => {
+                        setWindowPinModeState(opt.value)
+                        void SetWindowPinMode(opt.value)
+                      }}
+                    />
+                    <div className="flex flex-col">
+                      <span className={`font-medium ${isSelected ? 'text-foreground font-semibold' : 'text-foreground'}`}>
+                        {opt.label}
+                      </span>
+                      <span className="text-muted-foreground text-[11px] leading-snug mt-0.5">
+                        {opt.desc}
+                      </span>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1.5 rounded-md border p-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="opacity-slider" className="font-semibold cursor-pointer">
@@ -225,28 +315,35 @@ export default function CalendarSettingsDialog({
               </option>
             </select>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                void SetOpacity(initialOpacity)
-                onOpenChange(false)
-              }}
-            >
-              {resolvedLanguage === 'ko' ? '취소' : 'Cancel'}
-            </Button>
-            <Button
-              disabled={loadingSettings}
-              onClick={() => {
-                onChange(selected)
-                onChangeWeekStartsOn(selectedWeekStart === 'monday' ? 1 : 0)
-                void UpdateSettings({ autoStart, showTrayIcon, showOnTaskbar, opacity })
-                onOpenChange(false)
-              }}
-            >
-              {saveLabel}
-            </Button>
-          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-2 border-t mt-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              void SetOpacity(initialOpacity)
+              void SetWindowPinMode(initialWindowPinMode)
+              onOpenChange(false)
+            }}
+          >
+            {resolvedLanguage === 'ko' ? '취소' : 'Cancel'}
+          </Button>
+          <Button
+            disabled={loadingSettings}
+            onClick={() => {
+              onChange(selected)
+              onChangeWeekStartsOn(selectedWeekStart === 'monday' ? 1 : 0)
+              void UpdateSettings({
+                autoStart,
+                showTrayIcon,
+                showOnTaskbar,
+                opacity,
+                windowPinMode,
+              })
+              onOpenChange(false)
+            }}
+          >
+            {saveLabel}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

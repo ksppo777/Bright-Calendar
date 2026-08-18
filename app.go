@@ -75,6 +75,9 @@ func (a *App) startup(ctx context.Context) {
 					fmt.Printf("setWindowOpacity: %v\n", err)
 				}
 			}
+			if a.settings.WindowPinMode != "" {
+				a.SetWindowPinMode(a.settings.WindowPinMode)
+			}
 		}()
 	}
 	if err := a.applyAutoStart(a.settings.AutoStart); err != nil {
@@ -109,6 +112,22 @@ func (a *App) SetOpacity(opacity int) {
 	}
 	if runtime.GOOS == "windows" {
 		_ = setWindowOpacity("calendar widget", opacity)
+	}
+}
+
+// SetWindowPinMode sets the window pin layer mode: "normal", "bottom" (always behind), "top" (always on top).
+func (a *App) SetWindowPinMode(mode string) {
+	if mode != "top" && mode != "bottom" {
+		mode = "normal"
+	}
+	if runtime.GOOS == "windows" {
+		_ = setWindowPinMode("calendar widget", mode)
+	} else if a.ctx != nil {
+		if mode == "top" {
+			wailsruntime.WindowSetAlwaysOnTop(a.ctx, true)
+		} else {
+			wailsruntime.WindowSetAlwaysOnTop(a.ctx, false)
+		}
 	}
 }
 
@@ -1222,6 +1241,7 @@ type AppSettings struct {
 	ShowTrayIcon       bool   `json:"showTrayIcon"`
 	ShowOnTaskbar      bool   `json:"showOnTaskbar"`
 	Opacity            int    `json:"opacity"`
+	WindowPinMode      string `json:"windowPinMode"` // "normal", "bottom", "top"
 	GoogleClientID     string `json:"googleClientId,omitempty"`
 	GoogleClientSecret string `json:"googleClientSecret,omitempty"`
 }
@@ -1232,6 +1252,7 @@ func defaultSettings() AppSettings {
 		ShowTrayIcon:       true,
 		ShowOnTaskbar:      false,
 		Opacity:            100,
+		WindowPinMode:      "normal",
 		GoogleClientID:     DefaultGoogleClientID,
 		GoogleClientSecret: DefaultGoogleClientSecret,
 	}
@@ -1276,9 +1297,15 @@ func (a *App) loadSettings() error {
 		if _, exists := rawMap["opacity"]; !exists || cfg.Opacity <= 0 {
 			cfg.Opacity = 100
 		}
+		if _, exists := rawMap["windowPinMode"]; !exists || cfg.WindowPinMode == "" {
+			cfg.WindowPinMode = "normal"
+		}
 	}
 	if cfg.Opacity <= 0 || cfg.Opacity > 100 {
 		cfg.Opacity = 100
+	}
+	if cfg.WindowPinMode != "top" && cfg.WindowPinMode != "bottom" {
+		cfg.WindowPinMode = "normal"
 	}
 	if cfg.GoogleClientID == "" {
 		cfg.GoogleClientID = DefaultGoogleClientID
@@ -1317,7 +1344,7 @@ func (a *App) GetSettings() (AppSettings, error) {
 	return safe, nil
 }
 
-// UpdateSettings saves new settings and applies side effects like autostart, tray icon, and taskbar.
+// UpdateSettings saves new settings and applies side effects like autostart, tray icon, taskbar, and window pin mode.
 func (a *App) UpdateSettings(cfg AppSettings) (AppSettings, error) {
 	if err := a.applyAutoStart(cfg.AutoStart); err != nil {
 		return AppSettings{}, err
@@ -1333,6 +1360,9 @@ func (a *App) UpdateSettings(cfg AppSettings) (AppSettings, error) {
 	}
 	if runtime.GOOS == "windows" && cfg.Opacity != a.settings.Opacity {
 		_ = setWindowOpacity("calendar widget", cfg.Opacity)
+	}
+	if cfg.WindowPinMode != "" && cfg.WindowPinMode != a.settings.WindowPinMode {
+		a.SetWindowPinMode(cfg.WindowPinMode)
 	}
 	if cfg.GoogleClientID == "" {
 		cfg.GoogleClientID = a.settings.GoogleClientID

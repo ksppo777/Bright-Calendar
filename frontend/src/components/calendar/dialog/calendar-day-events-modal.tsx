@@ -2,7 +2,7 @@
 
 import { useCalendarContext } from '../calendar-context'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { isSameDay, format } from 'date-fns'
+import { isSameDay, format, startOfDay, endOfDay } from 'date-fns'
 import { colorOptions } from '../calendar-tailwind-classes'
 import { useLanguage } from '@/components/language-provider'
 
@@ -20,7 +20,13 @@ export default function CalendarDayEventsModal() {
   } = useCalendarContext()
   const { locale, resolvedLanguage } = useLanguage()
 
-  const dayEvents = events.filter((event) => isSameDay(event.start, date))
+  const dayStart = startOfDay(date)
+  const dayEnd = endOfDay(date)
+  const dayEvents = events.filter((event) => {
+    const s = startOfDay(event.start)
+    const e = endOfDay(event.end)
+    return s <= dayEnd && e >= dayStart
+  })
 
   return (
     <Dialog open={dayEventsModalOpen} onOpenChange={setDayEventsModalOpen}>

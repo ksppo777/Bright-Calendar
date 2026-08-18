@@ -38,6 +38,8 @@ export function SearchEvents(arg1:string,arg2:string,arg3:string,arg4:number):Pr
 
 export function SetOpacity(arg1:number):Promise<void>;
 
+export function SetWindowPinMode(arg1:string):Promise<void>;
+
 export function StartDrag():Promise<void>;
 
 export function StartResize(arg1:string):Promise<void>;

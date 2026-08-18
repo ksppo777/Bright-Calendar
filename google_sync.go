@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -114,9 +115,16 @@ func (f *FileTokenStore) Load() (OAuthTokens, error) {
 	if err != nil {
 		return OAuthTokens{}, err
 	}
+	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 {
+		return OAuthTokens{}, os.ErrNotExist
+	}
 	var tokens OAuthTokens
 	if err := json.Unmarshal(data, &tokens); err != nil {
-		return OAuthTokens{}, err
+		// Remove corrupted token file so user can re-authenticate without errors
+		_ = os.Remove(f.path)
+		return OAuthTokens{}, os.ErrNotExist
 	}
 	return tokens, nil
 }

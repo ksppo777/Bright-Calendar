@@ -5,6 +5,7 @@ export namespace main {
 	    showTrayIcon: boolean;
 	    showOnTaskbar: boolean;
 	    opacity: number;
+	    windowPinMode: string;
 	    googleClientId?: string;
 	    googleClientSecret?: string;
 	
@@ -18,6 +19,7 @@ export namespace main {
 	        this.showTrayIcon = source["showTrayIcon"];
 	        this.showOnTaskbar = source["showOnTaskbar"];
 	        this.opacity = source["opacity"];
+	        this.windowPinMode = source["windowPinMode"];
 	        this.googleClientId = source["googleClientId"];
 	        this.googleClientSecret = source["googleClientSecret"];
 	    }

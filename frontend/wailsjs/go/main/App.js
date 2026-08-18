@@ -74,6 +74,10 @@ export function SetOpacity(arg1) {
   return window['go']['main']['App']['SetOpacity'](arg1);
 }
 
+export function SetWindowPinMode(arg1) {
+  return window['go']['main']['App']['SetWindowPinMode'](arg1);
+}
+
 export function StartDrag() {
   return window['go']['main']['App']['StartDrag']();
 }
