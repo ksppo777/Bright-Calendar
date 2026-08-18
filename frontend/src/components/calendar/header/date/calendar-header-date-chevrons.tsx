@@ -17,16 +17,23 @@ export default function CalendarHeaderDateChevrons() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className="wails-drag flex items-center gap-2 select-none"
+      style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+    >
       <Button
         variant="outline"
-        className="h-7 w-7 p-1"
+        className="wails-no-drag h-7 w-7 p-1 cursor-pointer"
+        style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}
         onClick={handleDateBackward}
       >
         <ChevronLeft className="min-w-5 min-h-5" />
       </Button>
 
-      <span className="min-w-[140px] text-center font-medium">
+      <span
+        className="wails-drag min-w-[150px] py-1 text-center font-medium select-none cursor-default"
+        style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+      >
         {resolvedLanguage === 'ko'
           ? format(date, 'yyyy년 M월 d일', { locale })
           : format(date, 'MMMM d, yyyy', { locale })}
@@ -34,7 +41,8 @@ export default function CalendarHeaderDateChevrons() {
 
       <Button
         variant="outline"
-        className="h-7 w-7 p-1"
+        className="wails-no-drag h-7 w-7 p-1 cursor-pointer"
+        style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}
         onClick={handleDateForward}
       >
         <ChevronRight className="min-w-5 min-h-5" />

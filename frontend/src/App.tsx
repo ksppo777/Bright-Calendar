@@ -1,9 +1,10 @@
 import "@/index.css";
 import { useMemo, useState, useEffect } from "react";
 import CalendarDemo from "@/components/calendar-demo";
+import ResizeHandles from "@/components/resize-handles";
 import { WidgetVisibilityProvider } from "@/components/widget-visibility-context";
 import { useLanguage } from "@/components/language-provider";
-import { WindowSetPosition, WindowSetSize } from "../wailsjs/runtime/runtime";
+import { WindowSetPosition, WindowSetSize, WindowGetPosition, WindowGetSize } from "../wailsjs/runtime/runtime";
 import { CheckForUpdate, DownloadAndInstall } from "../wailsjs/go/main/App";
 
 const GITHUB_REPO = "ksppo777/Bright-Calendar";
@@ -69,11 +70,56 @@ function App() {
     WindowSetPosition(target.x, target.y);
   }, []);
 
+  useEffect(() => {
+    async function savePositionAndSize() {
+      try {
+        const [pos, size] = await Promise.all([
+          WindowGetPosition(),
+          WindowGetSize(),
+        ]);
+        if (pos && size) {
+          const saved = localStorage.getItem("widget-position-size");
+          const parsed = saved ? JSON.parse(saved) : {};
+          localStorage.setItem(
+            "widget-position-size",
+            JSON.stringify({
+              ...parsed,
+              x: pos.x,
+              y: pos.y,
+              width: size.w,
+              height: size.h,
+            })
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener("mouseup", savePositionAndSize);
+    window.addEventListener("resize", savePositionAndSize);
+    return () => {
+      window.removeEventListener("mouseup", savePositionAndSize);
+      window.removeEventListener("resize", savePositionAndSize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey && (e.key === "r" || e.key === "R")) || e.key === "F5") {
+        e.preventDefault();
+        window.location.reload();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <WidgetVisibilityProvider value={widgetValue}>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="relative h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden">
+        <ResizeHandles />
         {updateInfo && (
-          <div className="flex items-center justify-between gap-2 bg-amber-50 border-b border-amber-300 px-4 py-2 text-sm text-amber-800">
+          <div className="flex items-center justify-between gap-2 bg-amber-50 border-b border-amber-300 px-4 py-2 text-sm text-amber-800 shrink-0">
             <span>
               {updateState === "error"
                 ? (resolvedLanguage === "ko" ? "업데이트 실패. 다시 시도해 주세요." : "Update failed. Please try again.")
@@ -105,11 +151,11 @@ function App() {
             </div>
           </div>
         )}
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-0 pb-0 pt-0 md:px-0 md:pb-0 md:pt-0">
+        <div className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
           {isOpen ? (
             <CalendarDemo />
           ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border bg-card p-8 text-center shadow-2xl shadow-black/5">
+            <div className="m-auto flex flex-col items-center justify-center gap-3 rounded-2xl border bg-card p-8 text-center shadow-2xl shadow-black/5">
               <p className="text-lg font-semibold">
                 {resolvedLanguage === "ko"
                   ? "캘린더가 닫혔습니다"

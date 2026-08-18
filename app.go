@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -47,23 +48,34 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	globalAppRef = a
 	// Ensure the widget is not topmost so it won't cover other windows.
 	wailsruntime.WindowSetAlwaysOnTop(ctx, false)
-	if runtime.GOOS == "windows" {
-		// Hide from taskbar (tray-only feel) by adjusting window styles.
-		go func() {
-			// small delay to allow window to exist
-			time.Sleep(300 * time.Millisecond)
-			if err := hideFromTaskbar("calendar widget"); err != nil {
-				fmt.Printf("hideFromTaskbar: %v\n", err)
-			}
-		}()
-	}
 	if err := a.initDB(); err != nil {
 		fmt.Printf("failed to init db: %v\n", err)
 	}
 	if err := a.loadSettings(); err != nil {
 		fmt.Printf("failed to load settings: %v\n", err)
+	}
+	if runtime.GOOS == "windows" {
+		// Adjust taskbar visibility and show tray if enabled.
+		go func() {
+			// small delay to allow window to exist
+			time.Sleep(300 * time.Millisecond)
+			if err := setTaskbarVisibility("calendar widget", a.settings.ShowOnTaskbar); err != nil {
+				fmt.Printf("setTaskbarVisibility: %v\n", err)
+			}
+			if a.settings.ShowTrayIcon {
+				if err := setTrayIcon("calendar widget", true); err != nil {
+					fmt.Printf("setTrayIcon: %v\n", err)
+				}
+			}
+			if a.settings.Opacity > 0 && a.settings.Opacity <= 100 {
+				if err := setWindowOpacity("calendar widget", a.settings.Opacity); err != nil {
+					fmt.Printf("setWindowOpacity: %v\n", err)
+				}
+			}
+		}()
 	}
 	if err := a.applyAutoStart(a.settings.AutoStart); err != nil {
 		fmt.Printf("failed to apply autostart: %v\n", err)
@@ -73,7 +85,33 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
-// Greet returns a greeting for the given name
+// StartDrag initiates native OS window dragging.
+func (a *App) StartDrag() {
+	if runtime.GOOS == "windows" {
+		_ = startWindowDrag("calendar widget")
+	}
+}
+
+// StartResize initiates native OS window resizing in the given direction.
+func (a *App) StartResize(direction string) {
+	if runtime.GOOS == "windows" {
+		_ = startWindowResize("calendar widget", direction)
+	}
+}
+
+// SetOpacity dynamically adjusts the window opacity in real-time.
+func (a *App) SetOpacity(opacity int) {
+	if opacity < 10 {
+		opacity = 10
+	}
+	if opacity > 100 {
+		opacity = 100
+	}
+	if runtime.GOOS == "windows" {
+		_ = setWindowOpacity("calendar widget", opacity)
+	}
+}
+
 // GoogleAuthURL builds an OAuth consent URL for Google Calendar.
 func (a *App) GoogleAuthURL(state string) (string, error) {
 	if a.google == nil {
@@ -591,20 +629,31 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
+const (
+	DefaultGoogleClientID     = ""
+	DefaultGoogleClientSecret = ""
+)
+
 func (a *App) initGoogleSync() error {
 	appDir, err := appConfigDir()
 	if err != nil {
 		return err
 	}
 
-	// Prefer settings file values, fall back to environment variables.
+	// Prefer settings file values, fall back to environment variables or built-in defaults.
 	clientID := a.settings.GoogleClientID
 	clientSecret := a.settings.GoogleClientSecret
 	if clientID == "" {
 		clientID = os.Getenv("GOOGLE_CLIENT_ID")
 	}
+	if clientID == "" {
+		clientID = DefaultGoogleClientID
+	}
 	if clientSecret == "" {
 		clientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
+	}
+	if clientSecret == "" {
+		clientSecret = DefaultGoogleClientSecret
 	}
 	redirectURI := os.Getenv("GOOGLE_REDIRECT_URI")
 	if redirectURI == "" {
@@ -655,6 +704,9 @@ func (a *App) GetGoogleClientConfig() (string, error) {
 	clientID := a.settings.GoogleClientID
 	if clientID == "" {
 		clientID = os.Getenv("GOOGLE_CLIENT_ID")
+	}
+	if clientID == "" {
+		clientID = DefaultGoogleClientID
 	}
 	return clientID, nil
 }
@@ -1167,13 +1219,21 @@ func (a *App) syncStateSet(key, value string) error {
 
 type AppSettings struct {
 	AutoStart          bool   `json:"autoStart"`
+	ShowTrayIcon       bool   `json:"showTrayIcon"`
+	ShowOnTaskbar      bool   `json:"showOnTaskbar"`
+	Opacity            int    `json:"opacity"`
 	GoogleClientID     string `json:"googleClientId,omitempty"`
 	GoogleClientSecret string `json:"googleClientSecret,omitempty"`
 }
 
 func defaultSettings() AppSettings {
 	return AppSettings{
-		AutoStart: true,
+		AutoStart:          true,
+		ShowTrayIcon:       true,
+		ShowOnTaskbar:      false,
+		Opacity:            100,
+		GoogleClientID:     DefaultGoogleClientID,
+		GoogleClientSecret: DefaultGoogleClientSecret,
 	}
 }
 
@@ -1198,9 +1258,33 @@ func (a *App) loadSettings() error {
 		}
 		return err
 	}
+	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
 	var cfg AppSettings
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return err
+		a.settings = defaultSettings()
+		_ = a.saveSettings(a.settings)
+		return nil
+	}
+	var rawMap map[string]interface{}
+	if err := json.Unmarshal(data, &rawMap); err == nil {
+		if _, exists := rawMap["showTrayIcon"]; !exists {
+			cfg.ShowTrayIcon = true
+		}
+		if _, exists := rawMap["showOnTaskbar"]; !exists {
+			cfg.ShowOnTaskbar = false
+		}
+		if _, exists := rawMap["opacity"]; !exists || cfg.Opacity <= 0 {
+			cfg.Opacity = 100
+		}
+	}
+	if cfg.Opacity <= 0 || cfg.Opacity > 100 {
+		cfg.Opacity = 100
+	}
+	if cfg.GoogleClientID == "" {
+		cfg.GoogleClientID = DefaultGoogleClientID
+	}
+	if cfg.GoogleClientSecret == "" {
+		cfg.GoogleClientSecret = DefaultGoogleClientSecret
 	}
 	a.settings = cfg
 	return nil
@@ -1233,10 +1317,28 @@ func (a *App) GetSettings() (AppSettings, error) {
 	return safe, nil
 }
 
-// UpdateSettings saves new settings and applies side effects like autostart.
+// UpdateSettings saves new settings and applies side effects like autostart, tray icon, and taskbar.
 func (a *App) UpdateSettings(cfg AppSettings) (AppSettings, error) {
 	if err := a.applyAutoStart(cfg.AutoStart); err != nil {
 		return AppSettings{}, err
+	}
+	if runtime.GOOS == "windows" && cfg.ShowTrayIcon != a.settings.ShowTrayIcon {
+		_ = setTrayIcon("calendar widget", cfg.ShowTrayIcon)
+	}
+	if runtime.GOOS == "windows" && cfg.ShowOnTaskbar != a.settings.ShowOnTaskbar {
+		_ = setTaskbarVisibility("calendar widget", cfg.ShowOnTaskbar)
+	}
+	if cfg.Opacity <= 0 || cfg.Opacity > 100 {
+		cfg.Opacity = 100
+	}
+	if runtime.GOOS == "windows" && cfg.Opacity != a.settings.Opacity {
+		_ = setWindowOpacity("calendar widget", cfg.Opacity)
+	}
+	if cfg.GoogleClientID == "" {
+		cfg.GoogleClientID = a.settings.GoogleClientID
+	}
+	if cfg.GoogleClientSecret == "" {
+		cfg.GoogleClientSecret = a.settings.GoogleClientSecret
 	}
 	if err := a.saveSettings(cfg); err != nil {
 		return AppSettings{}, err

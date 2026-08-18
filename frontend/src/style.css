@@ -114,7 +114,23 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+  html,
+  body,
+  #root {
+    @apply h-full w-full overflow-hidden bg-background text-foreground;
+    margin: 0;
+    padding: 0;
   }
+}
+
+.wails-drag,
+.wails-drag * {
+  --wails-draggable: drag;
+  -webkit-app-region: drag;
+}
+
+.wails-no-drag,
+.wails-no-drag * {
+  --wails-draggable: no-drag;
+  -webkit-app-region: no-drag;
 }

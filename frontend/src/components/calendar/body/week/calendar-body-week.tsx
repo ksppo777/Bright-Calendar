@@ -12,14 +12,13 @@ export default function CalendarBodyWeek() {
     <div className="flex divide-x flex-grow overflow-hidden">
       <div className="flex flex-col flex-grow divide-y overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="relative flex flex-1 divide-x flex-col md:flex-row">
-            <CalendarBodyMarginDayMargin className="hidden md:block" />
+          <div className="relative flex flex-1 divide-x flex-row">
+            <CalendarBodyMarginDayMargin className="block" />
             {weekDays.map((day) => (
               <div
                 key={day.toISOString()}
-                className="flex flex-1 divide-x md:divide-x-0"
+                className="flex flex-1 divide-x-0"
               >
-                <CalendarBodyMarginDayMargin className="block md:hidden" />
                 <CalendarBodyDayContent date={day} />
               </div>
             ))}

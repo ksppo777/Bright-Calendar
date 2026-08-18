@@ -190,7 +190,7 @@ export default function CalendarDemo() {
       calendarIconIsToday
       api={api}
     >
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 h-full flex-1 min-h-0 overflow-hidden">
         <Header
           countryCode={countryCode}
           setCountryCode={setCountryCode}
@@ -198,7 +198,7 @@ export default function CalendarDemo() {
           setWeekStartsOn={(v) => setWeekStartsOn(v)}
         />
         {googleConnected === false && !onboardingDismissed && (
-          <div className="px-3 pt-2">
+          <div className="px-3 pt-2 shrink-0">
             <div className="rounded-xl border bg-muted/30 px-4 py-3 flex gap-3 text-sm">
               <div className="flex-1 flex flex-col gap-1">
                 <p className="font-semibold text-foreground">
@@ -243,7 +243,7 @@ export default function CalendarDemo() {
           </div>
         )}
         {syncError && (
-          <div className="px-3 pt-2 flex items-center gap-2">
+          <div className="px-3 pt-2 flex items-center gap-2 shrink-0">
             <div className="flex-1">
               <StatusBanner tone="error" message={syncError} />
             </div>
@@ -257,8 +257,8 @@ export default function CalendarDemo() {
             </button>
           </div>
         )}
-        <div className="rounded-2xl border bg-card shadow-2xl shadow-black/5">
-          <div className="flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0 rounded-2xl border bg-card shadow-2xl shadow-black/5 overflow-hidden m-2">
+          <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden">
             <CalendarBody />
           </div>
         </div>

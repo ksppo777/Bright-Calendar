@@ -2,6 +2,9 @@ export namespace main {
 	
 	export class AppSettings {
 	    autoStart: boolean;
+	    showTrayIcon: boolean;
+	    showOnTaskbar: boolean;
+	    opacity: number;
 	    googleClientId?: string;
 	    googleClientSecret?: string;
 	
@@ -12,6 +15,9 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.autoStart = source["autoStart"];
+	        this.showTrayIcon = source["showTrayIcon"];
+	        this.showOnTaskbar = source["showOnTaskbar"];
+	        this.opacity = source["opacity"];
 	        this.googleClientId = source["googleClientId"];
 	        this.googleClientSecret = source["googleClientSecret"];
 	    }

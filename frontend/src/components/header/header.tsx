@@ -33,30 +33,50 @@ export default function Header({
   }, [])
 
   return (
-    <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center px-3 py-2">
-      <button
-        type="button"
-        onClick={() => setDate(new Date())}
-        className="text-left text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+    <div
+      className="wails-drag grid w-full grid-cols-[1fr_auto_1fr] items-center px-4 py-3 min-h-[54px] select-none cursor-default"
+      style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+    >
+      <div
+        className="wails-drag flex items-center h-full py-1"
+        style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
       >
-        {format(now, 'yyyy-MM-dd (EEE) a hh:mm', { locale })}
-      </button>
-      <div className="flex items-center justify-center gap-3">
+        <div
+          onClick={() => setDate(new Date())}
+          className="wails-drag text-left text-xs font-medium text-muted-foreground hover:text-foreground transition-colors select-none py-1 pr-4 cursor-default"
+          style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+          title="클릭 시 오늘 날짜로 이동"
+        >
+          {format(now, 'yyyy-MM-dd (EEE) a hh:mm', { locale })}
+        </div>
+      </div>
+      <div
+        className="wails-drag flex items-center justify-center gap-3 h-full"
+        style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+      >
         <CalendarHeaderDateChevrons />
       </div>
-      <div className="flex items-center justify-end gap-2">
-        <CalendarHeaderActionsSync
-          onOpenAccountDialog={() => setAccountDialogOpen(true)}
-        />
-        <CalendarHeaderActionsAdd />
-        <HeaderThemeToggle />
-        <HeaderMenu
-          countryCode={countryCode}
-          setCountryCode={setCountryCode}
-          weekStartsOn={weekStartsOn}
-          setWeekStartsOn={setWeekStartsOn}
-          onOpenAccountDialog={() => setAccountDialogOpen(true)}
-        />
+      <div
+        className="wails-drag flex items-center justify-end h-full"
+        style={{ '--wails-draggable': 'drag' } as React.CSSProperties}
+      >
+        <div
+          className="wails-no-drag flex items-center gap-2 cursor-default"
+          style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}
+        >
+          <CalendarHeaderActionsSync
+            onOpenAccountDialog={() => setAccountDialogOpen(true)}
+          />
+          <CalendarHeaderActionsAdd />
+          <HeaderThemeToggle />
+          <HeaderMenu
+            countryCode={countryCode}
+            setCountryCode={setCountryCode}
+            weekStartsOn={weekStartsOn}
+            setWeekStartsOn={setWeekStartsOn}
+            onOpenAccountDialog={() => setAccountDialogOpen(true)}
+          />
+        </div>
       </div>
       <AccountDialog
         open={accountDialogOpen}

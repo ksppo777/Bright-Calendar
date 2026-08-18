@@ -55,8 +55,8 @@ export default function CalendarBodyMonth() {
   )
 
   return (
-    <div className="flex flex-col flex-grow overflow-hidden">
-      <div className="hidden md:grid grid-cols-7 border-border divide-x divide-border">
+    <div className="flex flex-col flex-1 h-full min-h-0 overflow-hidden">
+      <div className="grid grid-cols-7 border-border divide-x divide-border shrink-0">
         {(() => {
           const base =
             resolvedLanguage === 'ko'
@@ -68,7 +68,7 @@ export default function CalendarBodyMonth() {
         })().map((day) => (
           <div
             key={day}
-            className="py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
+            className="py-2.5 text-center text-sm font-medium text-muted-foreground border-b border-border select-none"
           >
             {day}
           </div>
@@ -78,7 +78,7 @@ export default function CalendarBodyMonth() {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={monthStart.toISOString()}
-          className="grid md:grid-cols-7 flex-grow overflow-y-auto relative"
+          className="grid grid-cols-7 auto-rows-fr flex-1 h-full min-h-0 overflow-y-auto relative"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -98,8 +98,8 @@ export default function CalendarBodyMonth() {
               <div
                 key={day.toISOString()}
                 className={cn(
-                  'relative flex flex-col border-b border-r p-2 aspect-square cursor-pointer',
-                  !isCurrentMonth && 'bg-muted/50 hidden md:flex'
+                  'relative flex flex-col border-b border-r p-1.5 md:p-2 min-h-0 cursor-pointer overflow-hidden',
+                  !isCurrentMonth && 'bg-muted/50'
                 )}
                 onClick={(e) => {
                   e.stopPropagation()

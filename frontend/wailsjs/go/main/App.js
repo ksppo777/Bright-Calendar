@@ -70,6 +70,18 @@ export function SearchEvents(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['SearchEvents'](arg1, arg2, arg3, arg4);
 }
 
+export function SetOpacity(arg1) {
+  return window['go']['main']['App']['SetOpacity'](arg1);
+}
+
+export function StartDrag() {
+  return window['go']['main']['App']['StartDrag']();
+}
+
+export function StartResize(arg1) {
+  return window['go']['main']['App']['StartResize'](arg1);
+}
+
 export function UpdateEvent(arg1) {
   return window['go']['main']['App']['UpdateEvent'](arg1);
 }

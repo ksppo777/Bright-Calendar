@@ -20,6 +20,8 @@ func main() {
 		Title:     "calendar widget",
 		Width:     1024,
 		Height:    768,
+		MinWidth:  500,
+		MinHeight: 400,
 		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
